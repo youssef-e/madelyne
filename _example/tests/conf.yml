@@ -1,8 +1,8 @@
 url: http://localhost:3000
 groups:
   main:
-    globalSetupCommand: ./example& sleep 1;
-    globalTearDownCommand: pkill example
+    globalSetupCommand: cd ..; go build; ./example& sleep 1;
+    globalTearDownCommand: pkill example;cd ..; rm example
     setupCommand: curl -s http://localhost:3000/_reset  > /dev/null
     teardownCommand: ~
     environment: env.json
