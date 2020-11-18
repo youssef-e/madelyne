@@ -1,0 +1,9 @@
+{
+    "error": "",
+    "data": {
+        "id": 1,
+        "title": "New title",
+        "desc": "New desc",
+        "content": "New content"
+    }
+}

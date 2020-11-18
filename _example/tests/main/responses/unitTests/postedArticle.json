@@ -1,0 +1,9 @@
+{
+    "error": "",
+    "data": {
+        "id": "@number@.greaterThan(0)",
+        "title": "New title",
+        "desc": "New desc",
+        "content": "New content"
+    }
+}

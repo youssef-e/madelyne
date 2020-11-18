@@ -1,0 +1,10 @@
+url: http://localhost:3000
+groups:
+  main:
+    globalSetupCommand: ./example& sleep 1;
+    globalTearDownCommand: pkill example
+    setupCommand: curl -s http://localhost:3000/_reset  > /dev/null
+    teardownCommand: ~
+    environment: env.json
+    tests: 
+      - tests.yml

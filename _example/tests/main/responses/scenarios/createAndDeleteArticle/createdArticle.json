@@ -1,0 +1,9 @@
+{
+    "error": "",
+    "data": {
+        "id": "#article_id={{@number@}}",
+        "title": "New title",
+        "desc": "New desc",
+        "content": "New content"
+    }
+}

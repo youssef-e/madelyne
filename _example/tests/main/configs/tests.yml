@@ -1,0 +1,18 @@
+unit_tests:
+  GET:
+    - { url: "/articles/all", status: 200, out: "unitTests/allArticles" }
+    - { url: "/articles/0", status: 200, out: "unitTests/firstArticle" }
+  POST:
+    - { url: "/articles", status: 201, in: "unitTests/article", out: "unitTests/postedArticle" }
+  PUT:
+    - { url: "/articles/1", status: 200, in: "unitTests/article", out: "unitTests/updatedArticle" }
+  DELETE:
+    - { url: "/articles/1", status: 204 }
+scenario:
+  createAndDeleteArticle:
+    - { action: "POST", url: "/articles", status: 201, in: "scenarios/createAndDeleteArticle/article", out: "scenarios/createAndDeleteArticle/createdArticle" }
+    - { action: "GET", url: "/articles/#article_id#", status: 200, out: "scenarios/createAndDeleteArticle/article" }
+    - { action: "PUT", url: "/articles/#article_id#", status: 200, in: "scenarios/createAndDeleteArticle/updateArticle", out: "scenarios/createAndDeleteArticle/updateArticle" }
+    - { action: "GET", url: "/articles/#article_id#", status: 200, out: "scenarios/createAndDeleteArticle/updateArticle" }
+    - { action: "DELETE", url: "/articles/#article_id#", status: 204 }
+    - { action: "GET", url: "/articles/#article_id#", status: 404, out: "scenarios/createAndDeleteArticle/articleNotFound" }
