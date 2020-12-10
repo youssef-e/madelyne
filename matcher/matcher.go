@@ -41,11 +41,13 @@ func matchPatter(value interface{}, pattern string) error {
 		return matchValue(value, pattern)
 	}
 
+	program := strings.Join(splitted[2:], "@")
+
 	switch splitted[1] {
 	case "string":
-		return matchString(value, splitted[2])
+		return matchString(value, program)
 	case "number", "double", "integer":
-		return matchNumber(value, splitted[2])
+		return matchNumber(value, program)
 	case "boolean":
 		return matchBool(value)
 	case "uuid":

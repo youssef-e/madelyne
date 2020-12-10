@@ -47,6 +47,11 @@ func TestMatchStringValues(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			value:          "@B(onjour, comment ça va ?",
+			patternOrValue: "@string@.startsWith('@')",
+			expectedError:  nil,
+		},
+		{
 			value:          "Bonjour, comment ça va ?",
 			patternOrValue: "@string@.startsWith('bonjour')",
 			expectedError:  ErrNotStartsWith,
