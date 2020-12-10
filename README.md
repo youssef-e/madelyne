@@ -168,6 +168,8 @@ go test ./... -coverprofile=coverage.out && ./e2e-test.sh
 
 Next steps are : 
 
+ - reload env.json before each test ?? 
+ - add a new command to create default test folder
  - A better output when a test failed, to allow you to localise the test responsible more quickly
  - Add a build fixture phase
 
