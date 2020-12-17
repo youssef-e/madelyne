@@ -121,12 +121,12 @@ func (t *UnitTester) compareBody(left io.Reader, right []byte, expectedContentTy
 
 	if expectedContentType == "application/json" {
 		t.comparator.Reset()
-		leftData := map[string]interface{}{}
+		var leftData interface{}
 		err := json.Unmarshal(leftBytes, &leftData)
 		if err != nil {
 			return ErrorIn(ut, leftBytes, err)
 		}
-		rightData := map[string]interface{}{}
+		var rightData interface{}
 		err = json.Unmarshal(right, &rightData)
 		if err != nil {
 			return ErrorIn(ut, right, err)
