@@ -34,9 +34,9 @@ func ErrorIn(ut testerconfig.UnitTest, r []byte, err error) *UnitTesterError {
 
 func (e *UnitTesterError) Error() string {
 	if e.Result == nil {
-		return fmt.Sprintf("in test : '%s', CtOut : %s \nErr : %s", e.Ut.Url, e.Ut.CtOut, e.Err.Error())
+		return fmt.Sprintf("in test : '%s:%s', CtOut : %s \nErr : %s", e.Ut.Action, e.Ut.Url, e.Ut.CtOut, e.Err.Error())
 	}
-	return fmt.Sprintf("in test : '%s', CtOut : %s \nErr : %s \ngot : \n%s", e.Ut.Url, e.Ut.CtOut, e.Err.Error(), e.Result)
+	return fmt.Sprintf("in test : '%s:%s', CtOut : %s \nErr : %s \ngot : \n%s", e.Ut.Action, e.Ut.Url, e.Ut.CtOut, e.Err.Error(), e.Result)
 }
 func (e *UnitTesterError) Unwrap() error { return e.Err }
 
@@ -80,7 +80,11 @@ func (t *UnitTester) RunSingle(ut testerconfig.UnitTest) error {
 	}
 
 	if r.StatusCode != ut.Status {
-		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d", ErrWrongStatus, r.StatusCode, ut.Status))
+		var bodyBytes []byte
+		if r.Body != nil {
+			bodyBytes, _ = ioutil.ReadAll(r.Body)
+		}
+		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d \nRsp : \n%s", ErrWrongStatus, r.StatusCode, ut.Status, string(bodyBytes)))
 	}
 
 	ctOut := ut.CtOut
