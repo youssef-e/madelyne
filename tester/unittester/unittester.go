@@ -61,17 +61,18 @@ func (t *UnitTester) Env() map[string]string {
 func (t *UnitTester) RunSingle(ut testerconfig.UnitTest) error {
 	var sendedBody io.Reader
 	if ut.In != nil {
+		ut.In = ReplaceWithEnvValue(ut.In, t.Environment)
 		sendedBody = bytes.NewReader(ut.In)
 	}
 	request := testerclient.Request{
 		Method:  ut.Action,
-		Url:     ReplaceWithEnvValue(ut.Url, t.Environment),
+		Url:     ReplaceStringWithEnvValue(ut.Url, t.Environment),
 		Body:    sendedBody,
 		Headers: map[string]string{"Content-Type": ut.CtIn},
 	}
 
 	for key, value := range ut.Headers {
-		request.Headers[key] = ReplaceWithEnvValue(value, t.Environment)
+		request.Headers[key] = ReplaceStringWithEnvValue(value, t.Environment)
 	}
 
 	r, err := t.client.Make(request)
@@ -85,11 +86,6 @@ func (t *UnitTester) RunSingle(ut testerconfig.UnitTest) error {
 			bodyBytes, _ = ioutil.ReadAll(r.Body)
 		}
 		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d \nRsp : \n%s", ErrWrongStatus, r.StatusCode, ut.Status, string(bodyBytes)))
-	}
-
-	ctOut := ut.CtOut
-	if ctOut == "" {
-		ctOut = "application/json"
 	}
 
 	if !strings.HasPrefix(r.ContentType, ut.CtOut) {

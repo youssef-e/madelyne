@@ -19,9 +19,14 @@ func TestReplaceWithEnvValue(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		result := ReplaceWithEnvValue(tt.input, tt.env)
+		result := ReplaceStringWithEnvValue(tt.input, tt.env)
 		if result != tt.expected {
 			t.Fatalf("%d : failed got %s exp %s", i, result, tt.expected)
+		}
+		asBytes := []byte(tt.input)
+		bytesResult := ReplaceWithEnvValue(asBytes, tt.env)
+		if string(bytesResult) != tt.expected {
+			t.Fatalf("%d : failed got %s exp %s", i, string(bytesResult), tt.expected)
 		}
 	}
 }
