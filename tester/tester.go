@@ -23,13 +23,16 @@ func Load(confFile string) (*Tester, error) {
 		return nil, err
 	}
 	progress := testerprogress.New(os.Stdout, countSteps(config.Groups))
+	tester := Build(config, testercommand.Run)
+	tester.suite.ProgressLogger = func() { progress.Step() }
+	return tester, nil
+}
+
+func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Tester {
 	return &Tester{
 		groups: config.Groups,
 		suite: suitetester.SuiteTester{
-			ProgressLogger: func() { progress.Step() },
-			CommandLauncher: func(cmd string) error {
-				return testercommand.Run(cmd)
-			},
+			CommandLauncher: cmdLauncher,
 			UnitTesterBuilder: func(groupName string, env map[string]string) suitetester.UnitTester {
 				ut := unittester.New(
 					testerclient.New(config.Url),
@@ -53,7 +56,7 @@ func Load(confFile string) (*Tester, error) {
 				return st
 			},
 		},
-	}, nil
+	}
 }
 
 func (t *Tester) Run() error {
