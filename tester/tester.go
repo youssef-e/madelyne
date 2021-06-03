@@ -13,12 +13,8 @@ import (
 )
 
 type Tester struct {
-	suite  suitetester.SuiteTester
-	groups map[string]testerconfig.TestGroup
-}
-
-func (t *Tester) SetProgressFunc(p func()){
-	t.suite.ProgressLogger = p
+	Suite  suitetester.SuiteTester
+	Groups map[string]testerconfig.TestGroup
 }
 
 func Load(confFile string) (*Tester, error) {
@@ -28,14 +24,14 @@ func Load(confFile string) (*Tester, error) {
 	}
 	progress := testerprogress.New(os.Stdout, countSteps(config.Groups))
 	tester := Build(config, testercommand.Run)
-	tester.suite.ProgressLogger = func() { progress.Step() }
+	tester.Suite.ProgressLogger = func() { progress.Step() }
 	return tester, nil
 }
 
 func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Tester {
 	return &Tester{
-		groups: config.Groups,
-		suite: suitetester.SuiteTester{
+		Groups: config.Groups,
+		Suite: suitetester.SuiteTester{
 			CommandLauncher: cmdLauncher,
 			UnitTesterBuilder: func(groupName string, env map[string]string) suitetester.UnitTester {
 				ut := unittester.New(
@@ -64,7 +60,7 @@ func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Test
 }
 
 func (t *Tester) Run() error {
-	return t.suite.RunSuite(t.groups)
+	return t.Suite.RunSuite(t.Groups)
 }
 
 func countSteps(groups map[string]testerconfig.TestGroup) int {
