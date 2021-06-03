@@ -17,6 +17,10 @@ type Tester struct {
 	groups map[string]testerconfig.TestGroup
 }
 
+func (t *Tester) SetProgressFunc(p func()){
+	t.suite.ProgressLogger = p
+}
+
 func Load(confFile string) (*Tester, error) {
 	config, err := testerconfig.New().Load(confFile)
 	if err != nil {
