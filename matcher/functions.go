@@ -26,6 +26,8 @@ var (
 	ErrNotMatchRegex = fmt.Errorf("Provided string doesn't match the regex.")
 	ErrInvalidRegex  = fmt.Errorf("Provided regex is invalid.")
 	ErrContains      = fmt.Errorf("Provided string contains a value it shouldn't.")
+	ErrDateBefore    = fmt.Errorf("Provided date is not before the expected date.")
+	ErrDateAfter     = fmt.Errorf("Provided date is not after the expected date.")
 
 	ErrOneOf = fmt.Errorf("None of the functions provided in OneOf were validated.")
 )
@@ -141,7 +143,7 @@ func fn_string_isDateTime(value interface{}, args []interface{}) error {
 	if len(args) != 0 {
 		return fmt.Errorf("0 isDateTime : %w want 0 parameters got %d", ErrInvalidParameters, len(args))
 	}
-	_, err := time.Parse(time.RFC3339, valueAsString)
+	_, err := parseTime(valueAsString)
 	if err != nil {
 		return fmt.Errorf("1 isDateTime : %w Got: %s", ErrNotDateTime, value)
 	}
@@ -273,4 +275,82 @@ func fn_number_lowerThan(value interface{}, args []interface{}) error {
 		return fmt.Errorf("3 lowerThan : %w  got %v > %v", ErrLowerThan, valueAsFloat, converted)
 	}
 	return nil
+}
+
+func fn_string_before(value interface{}, args []interface{}) error {
+	err, t, t2 := stringDateCompare("before", value, args)
+	if err != nil {
+		return err
+	}
+
+	if !t.Before(*t2) {
+		return fmt.Errorf("DateTime is not upper than %w, %s > %s", ErrDateBefore, t.String(), t2.String())
+	}
+	return nil
+}
+
+func fn_string_after(value interface{}, args []interface{}) error {
+	err, t, t2 := stringDateCompare("after", value, args)
+	if err != nil {
+		return err
+	}
+
+	if !t.After(*t2) {
+		return fmt.Errorf("DateTime is not upper than %w, %s > %s", ErrDateAfter, t.String(), t2.String())
+	}
+	return nil
+}
+
+func parseTime(value string) (time.Time, error) {
+	t, err := time.Parse("2006-01-02T15:04:05+0000", value)
+	if err != nil {
+		t, err = time.Parse("2006-01-02", value)
+	}
+	if err != nil {
+		t, err = time.Parse(time.RFC3339, value)
+	}
+
+	return t, err
+}
+
+func stringDateCompare(funcName string, value interface{}, args []interface{}) (error, *time.Time, *time.Time) {
+	valueAsString, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("%w Got: %v", ErrNotString, value), nil, nil
+	}
+	if len(args) == 0 {
+		return fmt.Errorf("%s : %w want at least 1 parameter got %d", funcName, ErrInvalidParameters, len(args)), nil, nil
+	}
+
+	var t2 time.Time
+	if len(args) == 2 {
+		duration, err := strconv.ParseInt(args[0].(string), 10, 64)
+		if err != nil {
+			return fmt.Errorf("%s duration %w Got: %v", funcName, ErrNotNumber, duration), nil, nil
+		}
+
+		units := map[string]int64{
+			"day": int64(time.Hour * 24),
+		}
+
+		unit := units[args[1].(string)]
+		if unit == 0 {
+			return fmt.Errorf("%s unit %w Got: %v", funcName, ErrNotString, unit), nil, nil
+		}
+
+		t2 = time.Now().Add(time.Duration(duration * unit))
+	} else {
+		var err error
+		t2, err = parseTime(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("%s arg : %w Got: %s", funcName, ErrNotDateTime, value), nil, nil
+		}
+	}
+
+	t, err := parseTime(valueAsString)
+	if err != nil {
+		return fmt.Errorf("1 isDateTime : %w Got: %s", ErrNotDateTime, value), nil, nil
+	}
+
+	return nil, &t, &t2
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/madelyne-io/madelyne/tester/testerclient"
 	"github.com/madelyne-io/madelyne/tester/testercommand"
 	"github.com/madelyne-io/madelyne/tester/testerconfig"
+	"github.com/madelyne-io/madelyne/tester/testerfile"
 	"github.com/madelyne-io/madelyne/tester/testerprogress"
 	"github.com/madelyne-io/madelyne/tester/unittester"
 	"os"
@@ -37,6 +38,7 @@ func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Test
 				ut := unittester.New(
 					testerclient.New(config.Url),
 					comparator.New(groupName),
+					testerfile.New(),
 				)
 				for k, v := range env {
 					ut.Env()[k] = v
@@ -48,6 +50,7 @@ func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Test
 					return unittester.New(
 						testerclient.New(config.Url),
 						comparator.New(groupName),
+						testerfile.New(),
 					)
 				})
 				for k, v := range env {

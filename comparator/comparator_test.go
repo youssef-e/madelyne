@@ -50,6 +50,8 @@ func TestComparator(t *testing.T) {
 		capturedVars    map[string]interface{}
 		expected        error
 		expectedPath    []string
+		pattern         string
+		expectedPattern error
 	}{
 		{
 			title:           "TestExtraKeyOnLeft",
@@ -330,6 +332,26 @@ func TestComparator(t *testing.T) {
 			expected:        ErrNotMatching,
 			expectedPath:    []string{"?key", "[array1]", "0", "subkey"},
 		},
+		{
+			title:           "TestCaptureValue1",
+			left:            `{"key1": "value1"}`,
+			right:           `{"key1": "value1"}`,
+			externalLoarder: nil,
+			capturedVars:    map[string]interface{}{"pcre0": "value1", "pcre1": "1"},
+			expected:        nil,
+			pattern:         `value(\d)`,
+			expectedPattern: nil,
+		},
+		{
+			title:           "TestCaptureNotMatching",
+			left:            `{"key1": "value"}`,
+			right:           `{"key1": "value"}`,
+			externalLoarder: nil,
+			capturedVars:    map[string]interface{}{},
+			expected:        nil,
+			pattern:         `value([0-9])`,
+			expectedPattern: ErrNotMatching,
+		},
 	}
 
 	for i, tt := range tests {
@@ -355,6 +377,13 @@ func TestComparator(t *testing.T) {
 			}
 			if !reflect.DeepEqual(comparatorErr.Path, tt.expectedPath) {
 				t.Fatalf("%d:%s path failed: got %#v want %#v", i, tt.title, comparatorErr.Path, tt.expectedPath)
+			}
+		}
+
+		if tt.pattern != "" {
+			err = c.Capture([]byte(tt.left), tt.pattern)
+			if !errors.Is(err, tt.expectedPattern) {
+				t.Fatalf("%d:%s failed: got %v want %v", i, tt.title, err, tt.expected)
 			}
 		}
 

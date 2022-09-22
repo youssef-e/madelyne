@@ -137,7 +137,7 @@ func TestMatchStringValues(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			value:          "2020-07-24",
+			value:          "2020-24-07",
 			patternOrValue: "@string@.isDateTime()",
 			expectedError:  ErrNotDateTime,
 		},
@@ -209,7 +209,7 @@ func TestMatchStringValues(t *testing.T) {
 		{
 			value:          "2.6",
 			patternOrValue: "@number@",
-			expectedError:  ErrNotNumber,
+			expectedError:  nil,
 		},
 		{
 			value:          3.6,
@@ -320,6 +320,36 @@ func TestMatchStringValues(t *testing.T) {
 			value:          "c45bf1a5-ea78-4091-b4d9-f9ed94c760f4",
 			patternOrValue: "c45bf1a5-ea78-4091-b4d9-f9ed94c760f4",
 			expectedError:  nil,
+		},
+		{
+			value:          "/api/client/users?page=12&limit=10",
+			patternOrValue: "/api/client/users?page=@number@&limit=@integer@",
+			expectedError:  nil,
+		},
+		{
+			value:          "string=test&double=12.5&uuid=c45bf1a5-ea78-4091-b4d9-f9ed94c760f4",
+			patternOrValue: "string=@string@&double=@double@&uuid=@uuid@",
+			expectedError:  nil,
+		},
+		{
+			value:          "Bonjour, comment ça va ?",
+			patternOrValue: "Bonjour, @integer@",
+			expectedError:  ErrInvalidValue,
+		},
+		{
+			value:          "2020-07-24T08:11:55.537Z",
+			patternOrValue: "@string@.isDateTime().before('2020-07-24T10:11:55.537Z').after('2020-07-24T06:11:55.537Z')",
+			expectedError:  nil,
+		},
+		{
+			value:          "2020-07-24T08:11:55.537Z",
+			patternOrValue: "@string@.isDateTime().before('2020-07-24T06:11:55.537Z')",
+			expectedError:  ErrDateBefore,
+		},
+		{
+			value:          "2020-07-24T08:11:55.537Z",
+			patternOrValue: "@string@.isDateTime().after('2020-07-24T12:11:55.537Z')",
+			expectedError:  ErrDateAfter,
 		},
 	}
 	for i, test := range tests {

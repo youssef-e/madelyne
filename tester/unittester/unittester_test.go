@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/madelyne-io/madelyne/tester/testerclient"
 	"github.com/madelyne-io/madelyne/tester/testerconfig"
+	"io"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -30,10 +31,22 @@ type fakeComparator struct {
 func (fc *fakeComparator) Compare(actual interface{}, expected interface{}) error {
 	return fc.nextError
 }
+func (fc *fakeComparator) Capture(data []byte, pattern string) error {
+	return fc.nextError
+}
 func (fc *fakeComparator) GetCaptured() map[string]interface{} {
 	return fc.nexCapturedEnv
 }
 func (*fakeComparator) Reset() {}
+
+type fakeFileOpener struct {
+	nexFile   string
+	nextError error
+}
+
+func (f *fakeFileOpener) Open(name string) (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader(f.nexFile)), nil
+}
 
 func TestRunSingle(t *testing.T) {
 	FakeMakeError := fmt.Errorf("FakeMakeError")
@@ -42,6 +55,7 @@ func TestRunSingle(t *testing.T) {
 	tests := []struct {
 		input             testerconfig.UnitTest
 		simulatedResponse testerclient.Response
+		simulatedFile     string
 		simulatedError    error
 		comparatorResult  error
 		comparatorCapture map[string]interface{}
@@ -324,6 +338,19 @@ func TestRunSingle(t *testing.T) {
 			endEnv:            map[string]string{"test": "value"},
 			expected:          nil,
 		},
+		{
+			input: testerconfig.UnitTest{
+				Action: "FILE",
+				In:     []byte("filename"),
+				Out:    []byte("{\"somethingOnlyTheCOmparatorWillMatch\": 1}"),
+				CtIn:   "application/json",
+				CtOut:  "application/json",
+			},
+			simulatedFile:    "{\"somethingOnlyTheCOmparatorWillMatch\": 1}",
+			simulatedError:   nil,
+			comparatorResult: nil,
+			expected:         nil,
+		},
 	}
 
 	for i, tt := range tests {
@@ -335,47 +362,53 @@ func TestRunSingle(t *testing.T) {
 			nexCapturedEnv: tt.comparatorCapture,
 			nextError:      tt.comparatorResult,
 		}
+		fakeFileOpener := &fakeFileOpener{
+			nexFile:   tt.simulatedFile,
+			nextError: tt.simulatedError,
+		}
 
-		unittester := New(fakeClient, fakeComparator)
+		unittester := New(fakeClient, fakeComparator, fakeFileOpener)
 
 		err := unittester.RunSingle(tt.input)
 		if !errors.Is(err, tt.expected) {
 			t.Fatalf("%d failed got %v, exp %v", i, err, tt.expected)
 		}
 
-		if fakeClient.lastRequest.Method != tt.input.Action {
-			t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Method, tt.input.Action)
-		}
-		if fakeClient.lastRequest.Url != tt.input.Url {
-			t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Url, tt.input.Url)
-		}
-		if tt.input.In == nil {
-			if fakeClient.lastRequest.Body != nil {
-				t.Fatalf("%d lastRequest.Body should be nil", i)
+		if tt.input.Action != "FILE" {
+			if fakeClient.lastRequest.Method != tt.input.Action {
+				t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Method, tt.input.Action)
 			}
-		} else {
-			body, err := ioutil.ReadAll(fakeClient.lastRequest.Body)
-			if err != nil {
-				t.Fatalf("%d cannot read body of request %v", i, err)
+			if fakeClient.lastRequest.Url != tt.input.Url {
+				t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Url, tt.input.Url)
 			}
-			if !reflect.DeepEqual(body, tt.input.In) {
-				t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Body, tt.input.In)
+			if tt.input.In == nil {
+				if fakeClient.lastRequest.Body != nil {
+					t.Fatalf("%d lastRequest.Body should be nil", i)
+				}
+			} else {
+				body, err := ioutil.ReadAll(fakeClient.lastRequest.Body)
+				if err != nil {
+					t.Fatalf("%d cannot read body of request %v", i, err)
+				}
+				if !reflect.DeepEqual(body, tt.input.In) {
+					t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Body, tt.input.In)
+				}
+			}
+			if fakeClient.lastRequest.Headers["Content-Type"] != tt.input.CtIn {
+				t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Headers["Content-Type"], tt.input.CtIn)
 			}
 
-		}
-		if fakeClient.lastRequest.Headers["Content-Type"] != tt.input.CtIn {
-			t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Headers["Content-Type"], tt.input.CtIn)
+			for k, v := range tt.input.Headers {
+				_, ok := fakeClient.lastRequest.Headers[k]
+				if !ok {
+					t.Fatalf("%d should found %s ", i, k)
+				}
+				if fakeClient.lastRequest.Headers[k] != v {
+					t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Headers[k], v)
+				}
+			}
 		}
 
-		for k, v := range tt.input.Headers {
-			_, ok := fakeClient.lastRequest.Headers[k]
-			if !ok {
-				t.Fatalf("%d should found %s ", i, k)
-			}
-			if fakeClient.lastRequest.Headers[k] != v {
-				t.Fatalf("%d failed got %v exp %v ", i, fakeClient.lastRequest.Headers[k], v)
-			}
-		}
 		unitTestEnv := unittester.Env()
 
 		if len(tt.endEnv) != len(unitTestEnv) {

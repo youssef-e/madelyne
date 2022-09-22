@@ -1,8 +1,10 @@
 package testerclient
 
 import (
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Requester interface {
@@ -36,7 +38,12 @@ func New(baseUrl string) Client {
 }
 
 func (c Client) Make(r Request) (Response, error) {
-	request, err := http.NewRequest(r.Method, c.baseUrl+r.Url, r.Body)
+	u, err := encodeUrl(r.Url)
+	if err != nil {
+		return Response{}, err
+	}
+
+	request, err := http.NewRequest(r.Method, c.baseUrl+u, r.Body)
 	if err != nil {
 		return Response{}, err
 	}
@@ -99,4 +106,13 @@ func (c Client) Delete(url string, headers map[string]string) (Response, error) 
 		Url:     url,
 		Headers: headers,
 	})
+}
+
+func encodeUrl(u string) (string, error) {
+	p, err := url.Parse(u)
+	if err != nil {
+		return "", fmt.Errorf("Can't parse url : %w", err)
+	}
+	p.RawQuery = p.Query().Encode()
+	return p.String(), nil
 }

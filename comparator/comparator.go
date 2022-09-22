@@ -38,6 +38,7 @@ type MatcherFunction func(actual interface{}, expected interface{}) error
 
 type Comparator interface {
 	Compare(actual interface{}, expected interface{}) error
+	Capture(data []byte, pattern string) error
 	GetCaptured() map[string]interface{}
 	Reset()
 }
@@ -179,7 +180,7 @@ func (c *comparator) checkAllExpectedKeyArePresent(actual, expected map[string]i
 		if !ok {
 			if keyIsOptional {
 				c.path = c.path[:len(c.path)-1]
-				return nil
+				continue
 			}
 			return ErrorAt(c.path, fmt.Errorf("%w :%s", ErrMissingKey, k))
 		}
@@ -201,6 +202,18 @@ func (c *comparator) searchForExtraKey(actual, expected map[string]interface{}) 
 			return ErrorAt(c.path, fmt.Errorf("%w :%s", ErrExtraKey, k))
 		}
 		c.path = c.path[:len(c.path)-1]
+	}
+	return nil
+}
+
+func (c *comparator) Capture(data []byte, pattern string) error {
+	expression := regexp.MustCompile(pattern)
+	result := expression.FindSubmatch(data)
+	if len(result) == 0 {
+		return fmt.Errorf("%w :%s", ErrNotMatching, pattern)
+	}
+	for i, capture := range result {
+		c.captured[fmt.Sprintf("pcre%d", i)] = string(capture)
 	}
 	return nil
 }
