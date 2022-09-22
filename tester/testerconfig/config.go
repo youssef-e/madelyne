@@ -33,9 +33,12 @@ type UnitTest struct {
 	Status  int
 	Headers map[string]string
 	In      []byte
+	InName  string
 	Out     []byte
+	OutName string
 	CtIn    string
 	CtOut   string
+	Pcre    string
 }
 
 type ConfigLoader struct {
@@ -120,10 +123,15 @@ func (cl ConfigLoader) loadEnvFile(group string, filename string) (map[string]st
 	if err != nil {
 		return nil, err
 	}
-	env := map[string]string{}
-	err = json.Unmarshal([]byte(data), &env)
+	c := map[string]interface{}{}
+	err = json.Unmarshal(data, &c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal file %s : %w", filename, err)
+	}
+
+	env := make(map[string]string)
+	for k, v := range c {
+		env[k] = fmt.Sprintf("%v", v)
 	}
 	return env, nil
 }
@@ -137,6 +145,7 @@ type ymlUnitTest struct {
 	Out     string `yaml:"out"`
 	CtIn    string `yaml:"ct_in"`
 	CtOut   string `yaml:"ct_out"`
+	Pcre    string `yaml:"pcre"`
 }
 
 func (yut *ymlUnitTest) toUnitTest() (UnitTest, error) {
@@ -152,14 +161,15 @@ func (yut *ymlUnitTest) toUnitTest() (UnitTest, error) {
 		Headers: h,
 		CtIn:    yut.CtIn,
 		CtOut:   yut.CtOut,
+		InName:  yut.In,
+		OutName: yut.Out,
+		Pcre:    yut.Pcre,
 	}
 
 	if len(out.CtIn) == 0 {
 		out.CtIn = "application/json"
 	}
-	if len(out.CtOut) == 0 {
-		out.CtOut = "application/json"
-	}
+
 	if out.Status == 0 {
 		out.Status = 200
 	}
@@ -219,27 +229,9 @@ func (cl ConfigLoader) loadTests(group string, filenames []string) ([]UnitTest, 
 				if err != nil {
 					return nil, nil, err
 				}
-				if len(v.In) > 0 {
-					ext := ".json"
-					if u.CtIn != "application/json" {
-						ext = ""
-					}
-					in, err := cl.loadFile(group + "/payloads/" + v.In + ext)
-					if err != nil {
-						return nil, nil, err
-					}
-					u.In = in
-				}
-				if len(v.Out) > 0 {
-					ext := ".json"
-					if u.CtOut != "application/json" {
-						ext = ""
-					}
-					out, err := cl.loadFile(group + "/responses/" + v.Out + ext)
-					if err != nil {
-						return nil, nil, err
-					}
-					u.Out = out
+				err = cl.loadTestFile(v, &u, group)
+				if err != nil {
+					return nil, nil, err
 				}
 				uts = append(uts, u)
 			}
@@ -250,27 +242,9 @@ func (cl ConfigLoader) loadTests(group string, filenames []string) ([]UnitTest, 
 				if err != nil {
 					return nil, nil, err
 				}
-				if len(v.In) > 0 {
-					ext := ".json"
-					if u.CtIn != "application/json" {
-						ext = ""
-					}
-					in, err := cl.loadFile(group + "/payloads/" + v.In + ext)
-					if err != nil {
-						return nil, nil, err
-					}
-					u.In = in
-				}
-				if len(v.Out) > 0 {
-					ext := ".json"
-					if u.CtOut != "application/json" {
-						ext = ""
-					}
-					out, err := cl.loadFile(group + "/responses/" + v.Out + ext)
-					if err != nil {
-						return nil, nil, err
-					}
-					u.Out = out
+				err = cl.loadTestFile(v, &u, group)
+				if err != nil {
+					return nil, nil, err
 				}
 				scenarios[filename+":"+name] = append(scenarios[filename+":"+name], u)
 			}
@@ -278,4 +252,33 @@ func (cl ConfigLoader) loadTests(group string, filenames []string) ([]UnitTest, 
 	}
 
 	return uts, scenarios, nil
+}
+
+func (cl ConfigLoader) loadTestFile(v ymlUnitTest, u *UnitTest, group string) error {
+	if len(v.In) > 0 && u.Action != "FILE" {
+		ext := getExtension(u.CtIn)
+		in, err := cl.loadFile(group + "/payloads/" + v.In + ext)
+		if err != nil {
+			return err
+		}
+		u.In = in
+	}
+	if len(v.Out) > 0 {
+		ext := getExtension(u.CtOut)
+		out, err := cl.loadFile(group + "/responses/" + v.Out + ext)
+		if err != nil {
+			return err
+		}
+		u.Out = out
+	}
+
+	return nil
+}
+
+func getExtension(t string) string {
+	ext := ".json"
+	if t != "" && t != "application/json" {
+		ext = ""
+	}
+	return ext
 }

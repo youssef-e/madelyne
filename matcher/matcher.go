@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/madelyne-io/madelyne/matcher/vm"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -43,6 +44,9 @@ func matchPatter(value interface{}, pattern string) error {
 
 	program := strings.Join(splitted[2:], "@")
 
+	if splitted[0] != "" {
+		return matchText(value, pattern)
+	}
 	switch splitted[1] {
 	case "string":
 		return matchString(value, program)
@@ -54,6 +58,39 @@ func matchPatter(value interface{}, pattern string) error {
 		return matchUuid(value)
 	}
 	return fmt.Errorf("%w Got: %s", ErrInvalidPattern, pattern)
+}
+
+func matchText(value interface{}, pattern string) error {
+	_, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("%w Got: %v", ErrNotString, value)
+	}
+	r := regexp.MustCompile("@([^@]+)@")
+	matches := r.FindAllStringSubmatch(pattern, -1)
+	p := regexp.QuoteMeta(pattern)
+	for _, match := range matches {
+		var replace string
+		switch match[1] {
+		case "string":
+			replace = "(.+)"
+		case "double":
+			replace = "(\\-?[0-9]+[\\.|\\,][0-9]*)"
+		case "number":
+			replace = "(\\-?[0-9]+[\\.|\\,]?[0-9]*)"
+		case "integer":
+			replace = "(\\-?[0-9]+)"
+		case "uuid":
+			replace = "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12})"
+		default:
+			continue
+		}
+		p = strings.Replace(p, match[0], replace, -1)
+	}
+	v := regexp.MustCompile(p)
+	if !v.MatchString(value.(string)) {
+		return fmt.Errorf("%w Got: %v", ErrInvalidValue, value)
+	}
+	return nil
 }
 
 func matchString(value interface{}, program string) error {
@@ -76,6 +113,8 @@ func matchString(value interface{}, program string) error {
 		"isNotEmpty":  fn_string_isNotEmpty,
 		"matchRegex":  fn_string_matchRegex,
 		"oneOf":       fn_oneOf,
+		"before":      fn_string_before,
+		"after":       fn_string_after,
 	})
 	if err != nil {
 		return err
@@ -86,8 +125,17 @@ func matchString(value interface{}, program string) error {
 func matchNumber(value interface{}, program string) error {
 	_, ok := value.(float64)
 	if !ok {
-		return fmt.Errorf("%w Got: %v", ErrNotNumber, value)
+		valueAsString, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("%w Got: %v", ErrNotNumber, value)
+		}
+		s, err := strconv.ParseFloat(valueAsString, 64)
+		if err != nil {
+			return fmt.Errorf("%w Got: %v", ErrNotNumber, value)
+		}
+		value = s
 	}
+
 	if len(program) == 0 {
 		return nil
 	}
