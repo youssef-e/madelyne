@@ -71,7 +71,7 @@ func (c *comparator) Compare(actual interface{}, expected interface{}) error {
 	actualKind := reflect.ValueOf(actual).Kind()
 	expectedKind := reflect.ValueOf(expected).Kind()
 
-	if actualKind == reflect.Slice && expectedKind == reflect.String && strings.Contains(expected.(string), "@array@") {
+	if actualKind == reflect.Slice && expectedKind == reflect.String && strings.HasPrefix(expected.(string), "@array@") {
 		actualKind = reflect.String
 	}
 	if actualKind != expectedKind {
