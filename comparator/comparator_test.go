@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -352,13 +353,30 @@ func TestComparator(t *testing.T) {
 			pattern:         `value([0-9])`,
 			expectedPattern: ErrNotMatching,
 		},
+		{
+			title:           "TestArrayPattern",
+			left:            `{"key1": ["value","value2"]}`,
+			right:           `{"key1": "@array@"}`,
+			externalLoarder: nil,
+			capturedVars:    map[string]interface{}{},
+			expected:        nil,
+		},
+		{
+			title:           "TestArrayPattern_error",
+			left:            `{"key1": "value"}`,
+			right:           `{"key1": "@array@"}`,
+			externalLoarder: nil,
+			capturedVars:    map[string]interface{}{},
+			expected:        ErrNotMatching,
+			expectedPath:    []string{"key1"},
+		},
 	}
 
 	for i, tt := range tests {
 		c := New("").(*comparator)
 		c.loadExternalData = tt.externalLoarder
 		c.valueMatcher = func(actual interface{}, expected interface{}) error {
-			if actual == expected {
+			if actual == expected || (strings.HasPrefix(expected.(string), "@array@") && reflect.ValueOf(actual).Kind() == reflect.Slice) {
 				return nil
 			}
 			return ErrNotMatching
