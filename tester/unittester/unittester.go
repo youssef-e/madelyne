@@ -108,19 +108,11 @@ func (t *UnitTester) runApi(ut testerconfig.UnitTest) error {
 	}
 
 	if r.StatusCode != ut.Status {
-		var bodyBytes []byte
-		if r.Body != nil {
-			bodyBytes, _ = ioutil.ReadAll(r.Body)
-		}
-		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d.\nRsp: \n%s", ErrWrongStatus, r.StatusCode, ut.Status, string(bodyBytes)))
+		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d.\nRsp: \n%s", ErrWrongStatus, r.StatusCode, ut.Status, getResponseBody(r)))
 	}
 
 	if ut.CtOut != "" && !strings.HasPrefix(r.ContentType, ut.CtOut) {
-		var bodyBytes []byte
-		if r.Body != nil {
-			bodyBytes, _ = ioutil.ReadAll(r.Body)
-		}
-		return ErrorIn(ut, nil, fmt.Errorf("%w: %s expected %s.\nRsp: \n%s", ErrWrongContentType, r.ContentType, ut.CtOut, string(bodyBytes)))
+		return ErrorIn(ut, nil, fmt.Errorf("%w: %s expected %s.\nRsp: \n%s", ErrWrongContentType, r.ContentType, ut.CtOut, getResponseBody(r)))
 	}
 
 	if ut.Out != nil {
@@ -202,4 +194,21 @@ func (t *UnitTester) compareBody(left io.Reader, right []byte, expectedContentTy
 	}
 
 	return nil
+}
+
+func getResponseBody(r testerclient.Response) string {
+	var bodyBytes []byte
+	if r.Body != nil {
+		bodyBytes, _ = ioutil.ReadAll(r.Body)
+
+		if r.ContentType == "application/json" {
+			var prettyJSON bytes.Buffer
+			err := json.Indent(&prettyJSON, bodyBytes, "", "\t")
+			if err == nil {
+				bodyBytes = prettyJSON.Bytes()
+			}
+		}
+	}
+
+	return string(bodyBytes)
 }
