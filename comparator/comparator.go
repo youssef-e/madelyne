@@ -71,6 +71,9 @@ func (c *comparator) Compare(actual interface{}, expected interface{}) error {
 	actualKind := reflect.ValueOf(actual).Kind()
 	expectedKind := reflect.ValueOf(expected).Kind()
 
+	if actualKind == reflect.Slice && expectedKind == reflect.String && strings.Contains(expected.(string), "@array@") {
+		actualKind = reflect.String
+	}
 	if actualKind != expectedKind {
 		if expectedKind != reflect.String {
 			return ErrorAt(c.path, fmt.Errorf("%w : got %v want %v or %v", ErrTypeNotmatching, expectedKind, reflect.String, reflect.Slice))

@@ -3,6 +3,7 @@ package matcher
 import (
 	"fmt"
 	"github.com/madelyne-io/madelyne/matcher/vm"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ var (
 	ErrNotNumber      = fmt.Errorf("Provided value is not number type.")
 	ErrNotString      = fmt.Errorf("Provided value is not string type.")
 	ErrNotUuid        = fmt.Errorf("Provided value is not uuid type.")
+	ErrNotSlice       = fmt.Errorf("Provided value is not slice type.")
 
 	ErrUnhandledFunction = fmt.Errorf("Unhandled function.")
 	ErrInvalidFunctions  = fmt.Errorf("Functions are not written correctly.")
@@ -56,6 +58,8 @@ func matchPatter(value interface{}, pattern string) error {
 		return matchBool(value)
 	case "uuid":
 		return matchUuid(value)
+	case "array":
+		return matchArray(value, program)
 	}
 	return fmt.Errorf("%w Got: %s", ErrInvalidPattern, pattern)
 }
@@ -168,4 +172,21 @@ func matchUuid(value interface{}) error {
 		return fmt.Errorf("%w Got: %v", ErrNotUuid, value)
 	}
 	return nil
+}
+
+func matchArray(value interface{}, program string) error {
+	kind := reflect.ValueOf(value).Kind()
+	if kind != reflect.Slice {
+		return fmt.Errorf("%w Got: %v", ErrNotSlice, value)
+	}
+	if len(program) == 0 {
+		return nil
+	}
+	match, err := vm.BuildProgramMatcher(program, map[string]func(value interface{}, args []interface{}) error{
+		"repeat": fn_array_repeat,
+	})
+	if err != nil {
+		return err
+	}
+	return match(value)
 }

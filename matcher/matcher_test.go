@@ -351,6 +351,26 @@ func TestMatchStringValues(t *testing.T) {
 			patternOrValue: "@string@.isDateTime().after('2020-07-24T12:11:55.537Z')",
 			expectedError:  ErrDateAfter,
 		},
+		{
+			value:          []string{"1", "2", "3"},
+			patternOrValue: "@array@",
+			expectedError:  nil,
+		},
+		{
+			value:          "Bonjour !",
+			patternOrValue: "@array@",
+			expectedError:  ErrNotSlice,
+		},
+		{
+			value:          []string{"Bonjour", "This is", "a test"},
+			patternOrValue: "@array@.repeat('@string@')",
+			expectedError:  nil,
+		},
+		{
+			value:          []string{"Bonjour"},
+			patternOrValue: "@array@.repeat('@integer@')",
+			expectedError:  ErrNotNumber,
+		},
 	}
 	for i, test := range tests {
 
