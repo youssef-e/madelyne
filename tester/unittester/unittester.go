@@ -37,9 +37,9 @@ func ErrorIn(ut testerconfig.UnitTest, r []byte, err error) *UnitTesterError {
 
 func (e *UnitTesterError) Error() string {
 	if e.Result == nil {
-		return fmt.Sprintf("in test : '%s:%s'\nIn: %s\nOut: %s\nCtOut : %s \nErr : %s", e.Ut.Action, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Err.Error())
+		return fmt.Sprintf("in test : '%s:%s'\nIn: %s\nOut: %s\nCtOut: %s\nStatus: %d\nHeaders: %s\nErr: %s", e.Ut.Action, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Ut.Status, e.Ut.Headers, e.Err.Error())
 	}
-	return fmt.Sprintf("in test : '%s:%s'\nIn: %s\nOut: %s\nCtOut : %s \nErr : %s \ngot : \n%s", e.Ut.Action, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Err.Error(), e.Result)
+	return fmt.Sprintf("in test : '%s:%s'\nIn: %s\nOut: %s\nCtOut: %s\nStatus: %d\nHeaders: %s\nErr: %s\ngot : \n%s", e.Ut.Action, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Ut.Status, e.Ut.Headers, e.Err.Error(), e.Result)
 }
 func (e *UnitTesterError) Unwrap() error { return e.Err }
 
@@ -108,15 +108,11 @@ func (t *UnitTester) runApi(ut testerconfig.UnitTest) error {
 	}
 
 	if r.StatusCode != ut.Status {
-		var bodyBytes []byte
-		if r.Body != nil {
-			bodyBytes, _ = ioutil.ReadAll(r.Body)
-		}
-		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d \nRsp : \n%s", ErrWrongStatus, r.StatusCode, ut.Status, string(bodyBytes)))
+		return ErrorIn(ut, nil, fmt.Errorf("%w: got %d expected %d.\nRsp: \n%s", ErrWrongStatus, r.StatusCode, ut.Status, getResponseBody(r)))
 	}
 
 	if ut.CtOut != "" && !strings.HasPrefix(r.ContentType, ut.CtOut) {
-		return ErrorIn(ut, nil, fmt.Errorf("%w: %s expected %s.", ErrWrongContentType, r.ContentType, ut.CtOut))
+		return ErrorIn(ut, nil, fmt.Errorf("%w: %s expected %s.\nRsp: \n%s", ErrWrongContentType, r.ContentType, ut.CtOut, getResponseBody(r)))
 	}
 
 	if ut.Out != nil {
@@ -198,4 +194,21 @@ func (t *UnitTester) compareBody(left io.Reader, right []byte, expectedContentTy
 	}
 
 	return nil
+}
+
+func getResponseBody(r testerclient.Response) string {
+	var bodyBytes []byte
+	if r.Body != nil {
+		bodyBytes, _ = ioutil.ReadAll(r.Body)
+
+		if r.ContentType == "application/json" {
+			var prettyJSON bytes.Buffer
+			err := json.Indent(&prettyJSON, bodyBytes, "", "\t")
+			if err == nil {
+				bodyBytes = prettyJSON.Bytes()
+			}
+		}
+	}
+
+	return string(bodyBytes)
 }
