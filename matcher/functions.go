@@ -3,6 +3,7 @@ package matcher
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -353,4 +354,23 @@ func stringDateCompare(funcName string, value interface{}, args []interface{}) (
 	}
 
 	return nil, &t, &t2
+}
+
+func fn_array_repeat(value interface{}, args []interface{}) error {
+	kind := reflect.ValueOf(value).Kind()
+	if kind != reflect.Slice {
+		return fmt.Errorf("%w Got: %v", ErrNotSlice, value)
+	}
+	if len(args) != 1 {
+		return fmt.Errorf("0 lowerThan : %w want 1 parameters got %d", ErrInvalidParameters, len(args))
+	}
+
+	s := reflect.ValueOf(value)
+	for i := 0; i < s.Len(); i++ {
+		err := matchPatter(s.Index(i).Interface(), args[0].(string))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
