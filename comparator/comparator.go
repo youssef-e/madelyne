@@ -41,6 +41,7 @@ type Comparator interface {
 	Capture(data []byte, pattern string) error
 	GetCaptured() map[string]interface{}
 	Reset()
+	SetEnv(env map[string]string)
 }
 
 func New(fileLocation string) Comparator {
@@ -49,6 +50,7 @@ func New(fileLocation string) Comparator {
 		valueMatcher:     matcher.Match,
 		captured:         map[string]interface{}{},
 		path:             []string{},
+		env:              nil,
 	}
 }
 
@@ -57,6 +59,7 @@ type comparator struct {
 	valueMatcher     MatcherFunction
 	captured         map[string]interface{}
 	path             []string
+	env              map[string]string
 }
 
 func (c *comparator) GetCaptured() map[string]interface{} {
@@ -94,8 +97,13 @@ func (c *comparator) Compare(actual interface{}, expected interface{}) error {
 	return c.matchAndCapture(actual, expected)
 }
 
+func (c *comparator) SetEnv(env map[string]string) {
+	c.env = env
+}
+
 func (c *comparator) matchAndCapture(actual interface{}, expected interface{}) error {
 	capturedName, realExpected := splitCapturedNameAndExpectedValue(expected)
+	realExpected = c.replaceWithEnvValue(realExpected)
 	err := c.valueMatcher(actual, realExpected)
 	if err != nil {
 		return ErrorAt(c.path, err)
@@ -219,4 +227,23 @@ func (c *comparator) Capture(data []byte, pattern string) error {
 		c.captured[fmt.Sprintf("pcre%d", i)] = string(capture)
 	}
 	return nil
+}
+
+var replaceVarRegexp = regexp.MustCompile(`\#(.*?)\#`)
+
+func (c *comparator) replaceWithEnvValue(src interface{}) interface{} {
+	expected, ok := src.(string)
+	if !ok {
+		return src
+	}
+	found := replaceVarRegexp.FindAllStringSubmatch(expected, -1)
+	for _, f := range found {
+		for _, fvalue := range f {
+			v, ok := c.env[fvalue]
+			if ok {
+				expected = strings.ReplaceAll(expected, fmt.Sprintf("#%s#", fvalue), v)
+			}
+		}
+	}
+	return expected
 }

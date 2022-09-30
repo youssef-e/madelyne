@@ -37,7 +37,8 @@ func (fc *fakeComparator) Capture(data []byte, pattern string) error {
 func (fc *fakeComparator) GetCaptured() map[string]interface{} {
 	return fc.nexCapturedEnv
 }
-func (*fakeComparator) Reset() {}
+func (*fakeComparator) Reset()                     {}
+func (*fakeComparator) SetEnv(_ map[string]string) {}
 
 type fakeFileOpener struct {
 	nexFile   string

@@ -175,6 +175,7 @@ func (t *UnitTester) compareBody(left io.Reader, right []byte, expectedContentTy
 		if err != nil {
 			return ErrorIn(ut, right, err)
 		}
+		t.comparator.SetEnv(t.Env())
 		err = t.comparator.Compare(leftData, rightData)
 		if err != nil {
 			return ErrorIn(ut, leftBytes, err)
