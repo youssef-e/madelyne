@@ -53,6 +53,7 @@ func TestComparator(t *testing.T) {
 		expectedPath    []string
 		pattern         string
 		expectedPattern error
+		env             map[string]string
 	}{
 		{
 			title:           "TestExtraKeyOnLeft",
@@ -370,6 +371,26 @@ func TestComparator(t *testing.T) {
 			expected:        ErrNotMatching,
 			expectedPath:    []string{"key1"},
 		},
+		{
+			title:           "TestEnv",
+			left:            `{"key1": "value"}`,
+			right:           `{"key1": "#test#"}`,
+			externalLoarder: nil,
+			capturedVars:    map[string]interface{}{},
+			expected:        nil,
+			expectedPath:    []string{"key1"},
+			env:             map[string]string{"test": "value"},
+		},
+		{
+			title:           "TestEnv_withError",
+			left:            `{"key1": "value"}`,
+			right:           `{"key1": "#test#"}`,
+			externalLoarder: nil,
+			capturedVars:    map[string]interface{}{},
+			expected:        ErrNotMatching,
+			expectedPath:    []string{"key1"},
+			env:             map[string]string{"test": "value1"},
+		},
 	}
 
 	for i, tt := range tests {
@@ -383,7 +404,7 @@ func TestComparator(t *testing.T) {
 		}
 
 		c.Reset()
-
+		c.SetEnv(tt.env)
 		err := c.Compare(testReadJson(tt.left, t), testReadJson(tt.right, t))
 		if !errors.Is(err, tt.expected) {
 			t.Fatalf("%d:%s failed: got %v want %v", i, tt.title, err, tt.expected)
