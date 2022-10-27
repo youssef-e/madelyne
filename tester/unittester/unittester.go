@@ -37,9 +37,9 @@ func ErrorIn(ut testerconfig.UnitTest, r []byte, err error) *UnitTesterError {
 
 func (e *UnitTesterError) Error() string {
 	if e.Result == nil {
-		return fmt.Sprintf("in test : '%s:%s'\nIn: %s\nOut: %s\nCtOut: %s\nStatus: %d\nHeaders: %s\nErr: %s", e.Ut.Action, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Ut.Status, e.Ut.Headers, e.Err.Error())
+		return fmt.Sprintf("in test :\nFile: %s\nUrl: %s\nIn: %s\nOut: %s\nCtOut: %s\nStatus: %d\nHeaders: %s\nErr: %s", e.Ut.File, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Ut.Status, e.Ut.Headers, e.Err.Error())
 	}
-	return fmt.Sprintf("in test : '%s:%s'\nIn: %s\nOut: %s\nCtOut: %s\nStatus: %d\nHeaders: %s\nErr: %s\ngot : \n%s", e.Ut.Action, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Ut.Status, e.Ut.Headers, e.Err.Error(), e.Result)
+	return fmt.Sprintf("in test :\nFile: %s\nUrl: %s\nIn: %s\nOut: %s\nCtOut: %s\nStatus: %d\nHeaders: %s\nErr: %s\ngot : \n%s", e.Ut.File, e.Ut.Url, e.Ut.InName, e.Ut.OutName, e.Ut.CtOut, e.Ut.Status, e.Ut.Headers, e.Err.Error(), e.Result)
 }
 func (e *UnitTesterError) Unwrap() error { return e.Err }
 

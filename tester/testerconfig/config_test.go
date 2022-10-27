@@ -46,7 +46,7 @@ groups:
     setupCommand: test23.sh
     teardownCommand: test24.sh
     environment: env.json
-    tests: 
+    tests:
       - access.yml
       - error.yml`,
 				"group1/env.json": `{
@@ -126,6 +126,7 @@ scenario:
 					},
 					UnitTests: []UnitTest{
 						UnitTest{
+							File:    "group3/configs/access.yml:GET",
 							Action:  "GET",
 							Url:     "/articles/all",
 							Status:  200,
@@ -140,6 +141,7 @@ scenario:
 							},
 						},
 						UnitTest{
+							File:    "group3/configs/access.yml:POST",
 							Action:  "POST",
 							Url:     "/articles",
 							Status:  201,
@@ -152,6 +154,7 @@ scenario:
 							Headers: map[string]string{},
 						},
 						UnitTest{
+							File:    "group3/configs/access.yml:PUT",
 							Action:  "PUT",
 							Url:     "/articles/1",
 							Status:  200,
@@ -164,6 +167,7 @@ scenario:
 							Headers: map[string]string{},
 						},
 						UnitTest{
+							File:    "group3/configs/access.yml:PATCH",
 							Action:  "PATCH",
 							Url:     "/articles/1",
 							Status:  200,
@@ -176,6 +180,7 @@ scenario:
 							Headers: map[string]string{},
 						},
 						UnitTest{
+							File:    "group3/configs/access.yml:DELETE",
 							Action:  "DELETE",
 							Url:     "/articles/1",
 							Status:  204,
@@ -186,6 +191,7 @@ scenario:
 							Headers: map[string]string{},
 						},
 						UnitTest{
+							File:    "group3/configs/error.yml:GET",
 							Action:  "GET",
 							Url:     "/articles/all",
 							Status:  404,
@@ -198,8 +204,9 @@ scenario:
 						},
 					},
 					Scenarios: map[string][]UnitTest{
-						"access.yml:createAndDeleteArticle": []UnitTest{
+						"group3/configs/access.yml:createAndDeleteArticle": []UnitTest{
 							UnitTest{
+								File:    "group3/configs/access.yml:createAndDeleteArticle:POST:0",
 								Action:  "POST",
 								Url:     "/articles",
 								Status:  201,
@@ -211,6 +218,7 @@ scenario:
 								Headers: map[string]string{},
 							},
 							UnitTest{
+								File:    "group3/configs/access.yml:createAndDeleteArticle:DELETE:1",
 								Action:  "DELETE",
 								Url:     "/articles/1",
 								Status:  204,

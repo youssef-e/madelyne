@@ -28,6 +28,7 @@ type TestGroup struct {
 }
 
 type UnitTest struct {
+	File    string
 	Action  string
 	Url     string
 	Status  int
@@ -148,13 +149,14 @@ type ymlUnitTest struct {
 	Pcre    string `yaml:"pcre"`
 }
 
-func (yut *ymlUnitTest) toUnitTest() (UnitTest, error) {
+func (yut *ymlUnitTest) toUnitTest(file string) (UnitTest, error) {
 
 	h, err := parseHeader(yut.Headers)
 	if err != nil {
 		return UnitTest{}, err
 	}
 	out := UnitTest{
+		File:    file,
 		Action:  yut.Action,
 		Url:     yut.Url,
 		Status:  yut.Status,
@@ -225,7 +227,7 @@ func (cl ConfigLoader) loadTests(group string, filenames []string) ([]UnitTest, 
 			}
 			for _, v := range tests {
 				v.Action = action
-				u, err := v.toUnitTest()
+				u, err := v.toUnitTest(group + "/configs/" + filename + ":" + action)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -237,8 +239,8 @@ func (cl ConfigLoader) loadTests(group string, filenames []string) ([]UnitTest, 
 			}
 		}
 		for name, steps := range config.Scenarios {
-			for _, v := range steps {
-				u, err := v.toUnitTest()
+			for i, v := range steps {
+				u, err := v.toUnitTest(fmt.Sprintf("%s/configs/%s:%s:%s:%d", group, filename, name, v.Action, i))
 				if err != nil {
 					return nil, nil, err
 				}
@@ -246,7 +248,8 @@ func (cl ConfigLoader) loadTests(group string, filenames []string) ([]UnitTest, 
 				if err != nil {
 					return nil, nil, err
 				}
-				scenarios[filename+":"+name] = append(scenarios[filename+":"+name], u)
+				sName := group + "/configs/" + filename + ":" + name
+				scenarios[sName] = append(scenarios[sName], u)
 			}
 		}
 	}

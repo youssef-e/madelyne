@@ -3,7 +3,7 @@
 package="github.com/madelyne-io/madelyne"
 package_split=(${package//\// })
 package_name=${package_split[${#package_split[@]} - 1]}
-platforms=("darwin/amd64" "linux/386" "linux/amd64" "windows/386" "windows/amd64")
+platforms=("darwin/arm64" "darwin/amd64" "linux/386" "linux/amd64" "windows/386" "windows/amd64")
 
 mkdir -p build
 rm -rf build/*
