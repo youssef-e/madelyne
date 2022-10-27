@@ -35,8 +35,9 @@ func (t *SuiteTester) runTest(setup string, teardown string, test func() error) 
 	return nil
 }
 
-func (t *SuiteTester) RunSuite(groups map[string]testerconfig.TestGroup) error {
-	for _, group := range groups {
+func (t *SuiteTester) RunSuite(order []string, groups map[string]testerconfig.TestGroup) error {
+	for _, name := range order {
+		group := groups[name]
 		err := t.runTest(group.GlobalSetupCommand, group.GlobalTearDownCommand, func() error {
 			err := t.runGroupUnitTest(group)
 			if err != nil {
@@ -64,7 +65,8 @@ func (t *SuiteTester) runGroupUnitTest(group testerconfig.TestGroup) error {
 }
 
 func (t *SuiteTester) runGroupScenario(group testerconfig.TestGroup) error {
-	for _, scenario := range group.Scenarios {
+	for _, name := range group.ScenarioOrder {
+		scenario := group.Scenarios[name]
 		err := t.runTest(group.SetupCommand, group.TeardownCommand, func() error {
 			return t.ScenarioTesterBuilder(group.GroupName, group.Environment).RunMultiple(scenario)
 		})

@@ -14,8 +14,9 @@ import (
 )
 
 type Tester struct {
-	Suite  suitetester.SuiteTester
-	Groups map[string]testerconfig.TestGroup
+	Suite       suitetester.SuiteTester
+	GroupsOrder []string
+	Groups      map[string]testerconfig.TestGroup
 }
 
 func Load(confFile string) (*Tester, error) {
@@ -31,7 +32,8 @@ func Load(confFile string) (*Tester, error) {
 
 func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Tester {
 	return &Tester{
-		Groups: config.Groups,
+		Groups:      config.Groups,
+		GroupsOrder: config.GroupsOrder,
 		Suite: suitetester.SuiteTester{
 			CommandLauncher: cmdLauncher,
 			UnitTesterBuilder: func(groupName string, env map[string]string) suitetester.UnitTester {
@@ -63,7 +65,7 @@ func Build(config testerconfig.Config, cmdLauncher func(cmd string) error) *Test
 }
 
 func (t *Tester) Run() error {
-	return t.Suite.RunSuite(t.Groups)
+	return t.Suite.RunSuite(t.GroupsOrder, t.Groups)
 }
 
 func countSteps(groups map[string]testerconfig.TestGroup) int {

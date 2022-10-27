@@ -21,9 +21,10 @@ func getTestFileOpener(fs map[string]string) func(string) (io.ReadCloser, error)
 
 func TestLoad(t *testing.T) {
 	tests := []struct {
-		filesystem map[string]string
-		url        string
-		expected   map[string]TestGroup
+		filesystem          map[string]string
+		url                 string
+		expected            map[string]TestGroup
+		expectedGroupsOrder []string
 	}{
 		{
 			filesystem: map[string]string{
@@ -76,6 +77,8 @@ scenario:
   createAndDeleteArticle:
     - { action: "POST", url: "/articles", status: 201, in: "postArticle" }
     - { action: "DELETE", url: "/articles/1", status: 204 }
+  addArticle:
+    - { action: "POST", url: "/articles", status: 201, in: "postArticle" }
 `,
 				"group3/configs/error.yml": `unit_tests:
   GET:
@@ -89,7 +92,8 @@ scenario:
 				"group3/payloads/article":              "6",
 				"group3/responses/notfound.json":       "7",
 			},
-			url: "https://localhost:8000",
+			url:                 "https://localhost:8000",
+			expectedGroupsOrder: []string{"group1", "group2", "group3"},
 			expected: map[string]TestGroup{
 				"group1": TestGroup{
 					GroupName:             "group1",
@@ -99,6 +103,7 @@ scenario:
 					TeardownCommand:       "test4.sh",
 					Environment:           map[string]string{},
 					UnitTests:             []UnitTest{},
+					ScenarioOrder:         []string{},
 					Scenarios:             map[string][]UnitTest{},
 				},
 				"group2": TestGroup{
@@ -111,8 +116,9 @@ scenario:
 						"key1": "value1",
 						"key2": "value2",
 					},
-					UnitTests: []UnitTest{},
-					Scenarios: map[string][]UnitTest{},
+					UnitTests:     []UnitTest{},
+					ScenarioOrder: []string{},
+					Scenarios:     map[string][]UnitTest{},
 				},
 				"group3": TestGroup{
 					GroupName:             "group3",
@@ -203,6 +209,10 @@ scenario:
 							Headers: map[string]string{},
 						},
 					},
+					ScenarioOrder: []string{
+						"group3/configs/access.yml:addArticle",
+						"group3/configs/access.yml:createAndDeleteArticle",
+					},
 					Scenarios: map[string][]UnitTest{
 						"group3/configs/access.yml:createAndDeleteArticle": []UnitTest{
 							UnitTest{
@@ -229,6 +239,20 @@ scenario:
 								Headers: map[string]string{},
 							},
 						},
+						"group3/configs/access.yml:addArticle": []UnitTest{
+							UnitTest{
+								File:    "group3/configs/access.yml:addArticle:POST:0",
+								Action:  "POST",
+								Url:     "/articles",
+								Status:  201,
+								In:      []byte("5"),
+								InName:  "postArticle",
+								CtIn:    "application/json",
+								Out:     nil,
+								CtOut:   "",
+								Headers: map[string]string{},
+							},
+						},
 					},
 				},
 			},
@@ -248,6 +272,9 @@ scenario:
 		}
 		if result.Url != tt.url {
 			t.Fatalf("%d failed \n exp %#v \n got %#v", i, tt.url, result.Url)
+		}
+		if !reflect.DeepEqual(result.GroupsOrder, tt.expectedGroupsOrder) {
+			t.Fatalf("%d group order failed \n exp %#v \n got %#v", i, tt.expectedGroupsOrder, result.GroupsOrder)
 		}
 		if !reflect.DeepEqual(result.Groups, tt.expected) {
 			t.Fatalf("%d failed \n exp %#v \n got %#v", i, tt.expected, result.Groups)

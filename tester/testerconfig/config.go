@@ -8,12 +8,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
 type Config struct {
-	Url    string
-	Groups map[string]TestGroup
+	Url         string
+	GroupsOrder []string
+	Groups      map[string]TestGroup
 }
 
 type TestGroup struct {
@@ -24,6 +26,7 @@ type TestGroup struct {
 	TeardownCommand       string
 	Environment           map[string]string
 	UnitTests             []UnitTest
+	ScenarioOrder         []string
 	Scenarios             map[string][]UnitTest
 }
 
@@ -102,6 +105,11 @@ func (cl ConfigLoader) Load(filename string) (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("while loading tests of group %s : %w", k, err)
 		}
+		sOrder := make([]string, 0, len(scenarios))
+		for k := range scenarios {
+			sOrder = append(sOrder, k)
+		}
+		sort.Strings(sOrder)
 		config.Groups[k] = TestGroup{
 			GroupName:             k,
 			GlobalSetupCommand:    v.GlobalSetupCommand,
@@ -110,9 +118,16 @@ func (cl ConfigLoader) Load(filename string) (Config, error) {
 			TeardownCommand:       v.TeardownCommand,
 			Environment:           env,
 			UnitTests:             units,
+			ScenarioOrder:         sOrder,
 			Scenarios:             scenarios,
 		}
 	}
+	gOrder := make([]string, 0, len(config.Groups))
+	for k := range config.Groups {
+		gOrder = append(gOrder, k)
+	}
+	sort.Strings(gOrder)
+	config.GroupsOrder = gOrder
 	return config, nil
 }
 
