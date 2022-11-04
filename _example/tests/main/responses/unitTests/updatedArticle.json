@@ -4,6 +4,7 @@
         "id": 1,
         "title": "New title",
         "desc": "New desc",
-        "content": "New content"
+        "content": "New content",
+        "created_at":"@string@.isDateTime()"
     }
 }

@@ -2,5 +2,6 @@
     "id": "@number@",
     "title": "@string@.isNotEmpty()",
     "desc": "@string@.isNotEmpty()",
-    "content": "@string@.isNotEmpty()"
+    "content": "@string@.isNotEmpty()",
+    "created_at": "@string@.isDateTime()"
 }

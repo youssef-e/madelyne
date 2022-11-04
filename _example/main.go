@@ -9,13 +9,16 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type Article struct {
-	Id      int    `json:"id"`
-	Title   string `json:"title"`
-	Desc    string `json:"desc"`
-	Content string `json:"content"`
+	Id        int     `json:"id"`
+	Title     string  `json:"title"`
+	Desc      string  `json:"desc"`
+	Content   string  `json:"content"`
+	CreatedAt IsoTime `json:"created_at"`
 }
 
 type Response struct {
@@ -30,22 +33,25 @@ const (
 
 var INITIAL_ARTICLES = []Article{
 	{
-		Id:      0,
-		Title:   "First article",
-		Desc:    "The first article",
-		Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		Id:        0,
+		Title:     "First article",
+		Desc:      "The first article",
+		Content:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		CreatedAt: IsoTimeNow(),
 	},
 	{
-		Id:      1,
-		Title:   "Second article",
-		Desc:    "The second article",
-		Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		Id:        1,
+		Title:     "Second article",
+		Desc:      "The second article",
+		Content:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		CreatedAt: IsoTimeNow(),
 	},
 	{
-		Id:      2,
-		Title:   "Third article",
-		Desc:    "The third article",
-		Content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		Id:        2,
+		Title:     "Third article",
+		Desc:      "The third article",
+		Content:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		CreatedAt: IsoTimeNow(),
 	},
 }
 var articles = INITIAL_ARTICLES
@@ -181,4 +187,53 @@ func main() {
 	})
 
 	http.ListenAndServe(":3000", r)
+}
+
+type IsoTime struct {
+	t     time.Time
+	valid bool
+}
+
+const layout = "2006-01-02T15:04:05+0000"
+
+func NewIsoTime(year, month, day int) IsoTime {
+	if year == 0 || month == 0 {
+		return IsoTime{}
+	}
+	if year != 0 && month != 0 && day == 0 {
+		day = 10
+	}
+	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	return IsoTime{t: t, valid: true}
+
+}
+
+func IsoTimeNow() IsoTime {
+	return IsoTime{t: time.Now(), valid: true}
+
+}
+
+func (mt *IsoTime) UnmarshalJSON(data []byte) error {
+	stringData := strings.Trim(string(data), "\"")
+	if stringData == "" {
+		return nil
+	}
+	t, err := time.Parse(layout, stringData)
+	if err != nil {
+		return err
+	}
+	mt.t = t
+	mt.valid = true
+	return nil
+}
+
+func (mt IsoTime) MarshalJSON() ([]byte, error) {
+	if mt.IsValid() {
+		return []byte(`"` + mt.t.Format(layout) + `"`), nil
+	}
+	return []byte(`""`), nil
+}
+
+func (mt *IsoTime) IsValid() bool {
+	return mt.valid
 }

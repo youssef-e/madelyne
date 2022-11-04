@@ -4,6 +4,7 @@
         "id":      0,
         "title":   "First article",
         "desc":    "The first article",
-        "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+        "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "created_at":"@string@.isDateTime()"
     }
 }
